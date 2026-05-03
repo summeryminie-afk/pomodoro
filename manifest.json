@@ -1,0 +1,17 @@
+{
+  "name": "FocusFlash",
+  "short_name": "FocusFlash",
+  "description": "사무실용 무음 뽀모도로 타이머",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#E53E3E",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

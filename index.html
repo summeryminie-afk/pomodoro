@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🍅 FocusFlash</title>
   <link rel="icon" id="favicon" type="image/svg+xml" href="">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#E53E3E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="FocusFlash">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
@@ -1126,6 +1130,7 @@ function onSessionEnd() {
     state.todaySessions++;
     saveSessions();
     state.cycleCount = (state.cycleCount + 1) % 4;
+    if ('setAppBadge' in navigator) navigator.setAppBadge(state.todaySessions);
   }
 
   const nextMode = getNextMode();
@@ -1338,6 +1343,7 @@ document.getElementById('reset-sessions-btn').addEventListener('click', () => {
   state.todaySessions = 0;
   saveSessions();
   renderStats();
+  if ('clearAppBadge' in navigator) navigator.clearAppBadge();
 });
 
 // Keyboard shortcuts
@@ -1370,6 +1376,11 @@ function init() {
   // Request notification permission on first load
   if (state.settings.notifyOS && 'Notification' in window && Notification.permission === 'default') {
     setTimeout(() => requestNotificationPermission(), 1500);
+  }
+
+  // Register Service Worker (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 }
 
