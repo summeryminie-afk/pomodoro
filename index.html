@@ -852,10 +852,18 @@ async function requestNotificationPermission() {
 function sendNotification(title, body) {
   if (!state.settings.notifyOS) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  try {
-    const n = new Notification(title, { body, icon: faviconEl.href });
-    n.onclick = () => window.focus();
-  } catch(e) {}
+  // Service Worker 경유 알림: OS가 네이티브 앱처럼 처리 → 작업표시줄 아이콘 깜빡임
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SHOW_NOTIFICATION', title,
+      options: { body, icon: '/icon.svg', requireInteraction: true }
+    });
+  } else {
+    try {
+      const n = new Notification(title, { body, icon: '/icon.svg' });
+      n.onclick = () => window.focus();
+    } catch(e) {}
+  }
 }
 
 // ── OVERLAY ──
