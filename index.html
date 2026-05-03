@@ -806,19 +806,32 @@ function setFavicon(type) {
 // ── TAB TITLE FLASH ──
 const ORIGINAL_TITLE = '🍅 FocusFlash';
 let titleFlashIv = null;
+let faviconFlashIv = null;
 
-function startTitleFlash(msg) {
+function startTitleFlash(msg, altMsg) {
   if (!state.settings.notifyTab) return;
+  stopTitleFlash();
   let toggle = false;
   titleFlashIv = setInterval(() => {
-    document.title = toggle ? msg : ORIGINAL_TITLE;
+    document.title = toggle ? (altMsg || ORIGINAL_TITLE) : msg;
     toggle = !toggle;
-  }, 1000);
+  }, 400);
+}
+
+function startFaviconFlash(activeType) {
+  clearInterval(faviconFlashIv);
+  let toggle = false;
+  faviconFlashIv = setInterval(() => {
+    setFavicon(toggle ? 'idle' : activeType);
+    toggle = !toggle;
+  }, 400);
 }
 
 function stopTitleFlash() {
   clearInterval(titleFlashIv);
+  clearInterval(faviconFlashIv);
   titleFlashIv = null;
+  faviconFlashIv = null;
   document.title = ORIGINAL_TITLE;
 }
 
@@ -1090,9 +1103,10 @@ function tick() {
 
   // 1-min warning tab flash
   if (state.timeLeft === 60 && state.settings.notifyTab) {
-    const warningMsg = state.mode === 'focus' ? '⚠️ 1분 남음!' : '⚠️ 곧 집중 시작!';
+    const warningMsg = state.mode === 'focus' ? '⚠️ 1분 남음! ⚠️' : '⚠️ 곧 집중 시작! ⚠️';
     if (document.visibilityState !== 'visible') {
-      startTitleFlash(warningMsg);
+      startTitleFlash(warningMsg, '🍅 FocusFlash');
+      startFaviconFlash('alert');
     }
   }
 
@@ -1125,8 +1139,10 @@ function onSessionEnd() {
   setFavicon('alert');
 
   if (document.visibilityState !== 'visible') {
-    const flashMsg = wasFocus ? '⏰ 쉬세요!' : '🔥 집중 시작!';
-    startTitleFlash(flashMsg);
+    const flashMsg    = wasFocus ? '🚨🚨 쉬세요! 🚨🚨'     : '🔥🔥 집중 시작! 🔥🔥';
+    const flashAltMsg = wasFocus ? '⏰ TIME TO REST ⏰' : '💪 FOCUS TIME 💪';
+    startTitleFlash(flashMsg, flashAltMsg);
+    startFaviconFlash('alert');
   } else {
     showOverlay(state.mode);
   }
