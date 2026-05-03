@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍅 FocusFlash</title>
+  <link rel="icon" id="favicon" type="image/svg+xml" href="">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-focus: #E53E3E;
+      --color-focus-light: #FEB2B2;
+      --color-focus-bg: rgba(229,62,62,0.12);
+      --color-short: #38A169;
+      --color-short-light: #C6F6D5;
+      --color-short-bg: rgba(56,161,105,0.12);
+      --color-long: #3182CE;
+      --color-long-light: #BEE3F8;
+      --color-long-bg: rgba(49,130,206,0.12);
+
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --text-muted: #888;
+      --text-dim: #555;
+      --accent: #E53E3E;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    [data-theme="light"] {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface2: #efefef;
+      --border: #e0e0e0;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --text-dim: #aaa;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      min-height: 300px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 4px;
+    }
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .icon-btn:hover { background: var(--surface2); color: var(--text); }
+
+    /* ── SCREENS ── */
+    .screen { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .screen.active { display: flex; }
+
+    /* ── MAIN SCREEN ── */
+    #main-screen {
+      align-items: center;
+      padding: 16px;
+      gap: 0;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 6px 4px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .mode-tab:hover { color: var(--text); }
+    .mode-tab.active[data-mode="focus"] {
+      background: var(--color-focus-bg);
+      color: var(--color-focus);
+      border: 1px solid var(--color-focus);
+    }
+    .mode-tab.active[data-mode="short-break"] {
+      background: var(--color-short-bg);
+      color: var(--color-short);
+      border: 1px solid var(--color-short);
+    }
+    .mode-tab.active[data-mode="long-break"] {
+      background: var(--color-long-bg);
+      color: var(--color-long);
+      border: 1px solid var(--color-long);
+    }
+
+    .timer-ring-wrap {
+      position: relative;
+      width: min(180px, 55vw);
+      height: min(180px, 55vw);
+      margin-bottom: 20px;
+    }
+    .timer-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+    .timer-bg-circle {
+      fill: none;
+      stroke: var(--surface2);
+      stroke-width: 5;
+    }
+    .timer-progress-circle {
+      fill: none;
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+    .timer-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .timer-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(28px, 8vw, 42px);
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .timer-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn-primary {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .btn-primary:active { transform: scale(0.96); }
+    .btn-icon-round {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all 0.15s;
+    }
+    .btn-icon-round:hover { background: var(--surface2); color: var(--text); }
+
+    .cycles {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .cycle-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      transition: all 0.3s;
+    }
+    .cycle-dot.done { background: var(--color-focus); border-color: var(--color-focus); }
+    .cycle-dot.current { background: transparent; border-color: var(--color-focus); box-shadow: 0 0 0 2px rgba(229,62,62,0.25); }
+
+    .stats-bar {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .stats-row:last-child { margin-bottom: 0; }
+    .stats-val { font-weight: 700; color: var(--text); }
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--color-focus);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    /* ── SETTINGS SCREEN ── */
+    #settings-screen {
+      overflow-y: auto;
+    }
+    .settings-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .settings-header h2 { font-size: 15px; font-weight: 700; }
+    .settings-body {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .settings-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .settings-section-title {
+      padding: 8px 14px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-label {
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+    }
+    .settings-row-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* Number input */
+    .num-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .num-btn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .num-btn:hover { background: var(--border); }
+    .num-val {
+      width: 36px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      outline: none;
+    }
+
+    /* Toggle */
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 3px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--text-dim);
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px) translateY(-50%); background: white; }
+
+    /* Select */
+    .settings-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* Notify permission banner */
+    .notify-banner {
+      margin: 0 16px 8px;
+      padding: 10px 12px;
+      background: rgba(49,130,206,0.12);
+      border: 1px solid rgba(49,130,206,0.3);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: #63b3ed;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .notify-banner button {
+      margin-left: auto;
+      padding: 4px 10px;
+      border: 1px solid rgba(49,130,206,0.5);
+      background: transparent;
+      color: #63b3ed;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .notify-banner button:hover { background: rgba(49,130,206,0.2); }
+    .notify-banner.hidden { display: none; }
+
+    /* ── ALERT OVERLAY ── */
+    #alert-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #alert-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #alert-overlay.intensity-normal { background: rgba(229,62,62,0.85); }
+    #alert-overlay.intensity-strong { background: rgba(229,62,62,0.95); }
+    #alert-overlay.intensity-extreme { background: rgba(180,0,0,1); }
+
+    @keyframes overlayFlash {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    @keyframes overlayShake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    #alert-overlay.flash-anim { animation: overlayFlash 0.4s ease 3; }
+    #alert-overlay.flash-anim-strong { animation: overlayFlash 0.35s ease 5; }
+    #alert-overlay.shake-anim { animation: overlayShake 0.5s ease; }
+
+    .alert-icon { font-size: 56px; margin-bottom: 16px; }
+    .alert-title { font-size: 26px; font-weight: 800; color: white; text-align: center; margin-bottom: 8px; }
+    .alert-msg { font-size: 15px; color: rgba(255,255,255,0.85); text-align: center; margin-bottom: 24px; }
+    .alert-countdown {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 16px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .alert-confirm {
+      padding: 12px 32px;
+      background: white;
+      color: #c53030;
+      border: none;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .alert-confirm:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+    .alert-skip {
+      margin-top: 12px;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── RESPONSIVE COMPACT ── */
+    @media (max-height: 400px) {
+      .mode-tabs { margin-bottom: 10px; }
+      .timer-ring-wrap { width: 110px; height: 110px; margin-bottom: 10px; }
+      .controls { margin-bottom: 10px; }
+      .cycles { margin-bottom: 10px; }
+      .stats-bar { display: none; }
+    }
+    @media (max-width: 250px) {
+      .mode-tab { font-size: 10px; padding: 5px 2px; }
+      .btn-primary { padding: 8px 18px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <div class="header-title">🍅 FocusFlash</div>
+    <div class="header-actions">
+      <button class="icon-btn" id="theme-btn" title="테마 전환" aria-label="테마 전환">🌙</button>
+      <button class="icon-btn" id="settings-btn" title="설정" aria-label="설정">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Main Timer Screen -->
+  <main class="screen active" id="main-screen">
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="focus">집중</button>
+      <button class="mode-tab" data-mode="short-break">짧은 휴식</button>
+      <button class="mode-tab" data-mode="long-break">긴 휴식</button>
+    </div>
+
+    <div class="timer-ring-wrap">
+      <svg class="timer-svg" viewBox="0 0 100 100">
+        <circle class="timer-bg-circle" cx="50" cy="50" r="44"/>
+        <circle class="timer-progress-circle" id="progress-ring" cx="50" cy="50" r="44"/>
+      </svg>
+      <div class="timer-center">
+        <div class="timer-display" id="timer-display">25:00</div>
+        <div class="timer-label" id="timer-label">집중</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-icon-round" id="reset-btn" title="리셋 (R)">↺</button>
+      <button class="btn-primary" id="start-btn">시작</button>
+      <button class="btn-icon-round" id="skip-btn" title="건너뛰기">⏭</button>
+    </div>
+
+    <div class="cycles" id="cycles-wrap">
+      <div class="cycle-dot current" data-idx="0"></div>
+      <div class="cycle-dot" data-idx="1"></div>
+      <div class="cycle-dot" data-idx="2"></div>
+      <div class="cycle-dot" data-idx="3"></div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stats-row">
+        <span>오늘 완료</span>
+        <span class="stats-val"><span id="today-count">0</span> / <span id="goal-count">8</span> 세션</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Settings Screen -->
+  <section class="screen" id="settings-screen">
+    <div class="settings-header">
+      <button class="icon-btn" id="settings-back-btn">←</button>
+      <h2>설정</h2>
+    </div>
+    <div id="notify-banner" class="notify-banner hidden">
+      <span>🔔 OS 알림 권한이 필요합니다</span>
+      <button id="request-notify-btn">허용 요청</button>
+    </div>
+    <div class="settings-body">
+
+      <div class="settings-section">
+        <div class="settings-section-title">타이머</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">집중 시간</div>
+          </div>
+          <div class="num-input-wrap">
+            <button class="num-btn" data-setting="focusTime" data-dir="-1">−</button>
+            <span class="num-val" id="focusTime-val">25</span>
+            <button class="num-btn" data-setting="focusTime" data-dir="1">+</button>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">분</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">짧은 휴식</div>
+          <div class="num-input-wrap">
+            <button class="num-btn" data-setting="shortBreak" data-dir="-1">−</button>
+            <span class="num-val" id="shortBreak-val">5</span>
+            <button class="num-btn" data-setting="shortBreak" data-dir="1">+</button>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">분</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">긴 휴식</div>
+          <div class="num-input-wrap">
+            <button class="num-btn" data-setting="longBreak" data-dir="-1">−</button>
+            <span class="num-val" id="longBreak-val">15</span>
+            <button class="num-btn" data-setting="longBreak" data-dir="1">+</button>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">분</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">자동 시작</div>
+            <div class="settings-row-sub">세션 종료 후 자동으로 다음 세션 시작</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="autoStart-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">휴식부터 시작</div>
+            <div class="settings-row-sub">앱 시작 / 리셋 시 짧은 휴식으로 먼저 시작</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="startWithBreak-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">알림</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">OS 팝업 알림</div>
+            <div class="settings-row-sub">브라우저 권한 필요</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="notifyOS-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">탭 제목 깜빡임</div>
+          <label class="toggle">
+            <input type="checkbox" id="notifyTab-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">화면 오버레이</div>
+          <label class="toggle">
+            <input type="checkbox" id="notifyOverlay-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row-label">오버레이 강도</div>
+          <select class="settings-select" id="overlayIntensity-select">
+            <option value="normal">보통</option>
+            <option value="strong">강함</option>
+            <option value="extreme">매우 강함</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">목표</div>
+        <div class="settings-row">
+          <div class="settings-row-label">하루 목표 세션</div>
+          <div class="num-input-wrap">
+            <button class="num-btn" data-setting="dailyGoal" data-dir="-1">−</button>
+            <span class="num-val" id="dailyGoal-val">8</span>
+            <button class="num-btn" data-setting="dailyGoal" data-dir="1">+</button>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">회</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:8px 0 4px;">
+        <button id="reset-sessions-btn" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:6px 16px;border-radius:8px;font-size:12px;cursor:pointer;">오늘 세션 기록 초기화</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Alert Overlay -->
+<div id="alert-overlay" role="dialog" aria-modal="true">
+  <div class="alert-icon" id="alert-icon">⏰</div>
+  <div class="alert-title" id="alert-title">집중 시간 종료!</div>
+  <div class="alert-msg" id="alert-msg">25분 완료! 5분 휴식을 시작하세요.</div>
+  <div class="alert-countdown" id="alert-countdown">10초 후 자동 닫힘</div>
+  <button class="alert-confirm" id="alert-confirm-btn">✓ 확인</button>
+  <button class="alert-skip" id="alert-dismiss-btn">그냥 닫기</button>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ── CONSTANTS ──
+const STORAGE = {
+  SETTINGS: 'focusflash_settings',
+  TODAY_SESSIONS: 'focusflash_today_sessions',
+  TODAY_DATE: 'focusflash_today_date',
+};
+
+const LIMITS = {
+  focusTime:  { min: 5,  max: 60 },
+  shortBreak: { min: 1,  max: 15 },
+  longBreak:  { min: 5,  max: 30 },
+  dailyGoal:  { min: 1,  max: 20 },
+};
+
+// ── STATE ──
+const state = {
+  mode: 'focus',
+  status: 'idle',
+  timeLeft: 25 * 60,
+  totalTime: 25 * 60,
+  cycleCount: 0,
+  todaySessions: 0,
+  isAlertPending: false,
+  settings: {
+    focusTime: 25,
+    shortBreak: 5,
+    longBreak: 15,
+    autoStart: false,
+    startWithBreak: false,
+    notifyOS: true,
+    notifyTab: true,
+    notifyOverlay: true,
+    overlayIntensity: 'strong',
+    dailyGoal: 8,
+    theme: 'dark',
+  }
+};
+
+// ── WEB WORKER ──
+let worker = null;
+let fallbackInterval = null;
+
+function createWorker() {
+  const code = `
+    let iv;
+    self.onmessage = function(e) {
+      if (e.data === 'start') {
+        iv = setInterval(function() { self.postMessage('tick'); }, 1000);
+      } else if (e.data === 'stop') {
+        clearInterval(iv);
+      }
+    };
+  `;
+  try {
+    const blob = new Blob([code], { type: 'application/javascript' });
+    const w = new Worker(URL.createObjectURL(blob));
+    w.onmessage = () => tick();
+    return w;
+  } catch(e) {
+    console.warn('[FocusFlash] Web Worker not supported, using setInterval fallback');
+    return null;
+  }
+}
+
+function startTimer() {
+  if (worker) {
+    worker.postMessage('start');
+  } else {
+    fallbackInterval = setInterval(tick, 1000);
+  }
+}
+
+function stopTimer() {
+  if (worker) {
+    worker.postMessage('stop');
+  } else {
+    clearInterval(fallbackInterval);
+  }
+}
+
+// ── FAVICON ──
+const faviconEl = document.getElementById('favicon');
+
+function setFavicon(type) {
+  const icons = {
+    focus:   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23E53E3E"/><text x="16" y="22" text-anchor="middle" font-size="16" fill="white">🍅</text></svg>`,
+    short:   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%2338A169"/><text x="16" y="22" text-anchor="middle" font-size="16" fill="white">☕</text></svg>`,
+    long:    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%233182CE"/><text x="16" y="22" text-anchor="middle" font-size="16" fill="white">🌿</text></svg>`,
+    alert:   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23E53E3E"/><text x="16" y="22" text-anchor="middle" font-size="18" fill="white">!</text></svg>`,
+    idle:    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="%23555"/><text x="16" y="22" text-anchor="middle" font-size="16" fill="white">🍅</text></svg>`,
+  };
+  faviconEl.href = `data:image/svg+xml,${icons[type] || icons.idle}`;
+}
+
+// ── TAB TITLE FLASH ──
+const ORIGINAL_TITLE = '🍅 FocusFlash';
+let titleFlashIv = null;
+
+function startTitleFlash(msg) {
+  if (!state.settings.notifyTab) return;
+  let toggle = false;
+  titleFlashIv = setInterval(() => {
+    document.title = toggle ? msg : ORIGINAL_TITLE;
+    toggle = !toggle;
+  }, 1000);
+}
+
+function stopTitleFlash() {
+  clearInterval(titleFlashIv);
+  titleFlashIv = null;
+  document.title = ORIGINAL_TITLE;
+}
+
+// ── OS NOTIFICATION ──
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  updateNotifyBanner();
+  return result === 'granted';
+}
+
+function sendNotification(title, body) {
+  if (!state.settings.notifyOS) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(title, { body, icon: faviconEl.href });
+    n.onclick = () => window.focus();
+  } catch(e) {}
+}
+
+// ── OVERLAY ──
+const overlay = document.getElementById('alert-overlay');
+const alertIcon = document.getElementById('alert-icon');
+const alertTitle = document.getElementById('alert-title');
+const alertMsg = document.getElementById('alert-msg');
+const alertCountdown = document.getElementById('alert-countdown');
+let overlayCountdownIv = null;
+
+function showOverlay(type) {
+  if (!state.settings.notifyOverlay) return;
+  const isBreak = (type === 'focus');
+  const intensity = state.settings.overlayIntensity;
+  const autoSeconds = intensity === 'extreme' ? 15 : 10;
+
+  alertIcon.textContent = isBreak ? '☕' : '🔥';
+  alertTitle.textContent = isBreak ? '집중 시간 종료!' : '휴식 시간 종료!';
+  alertMsg.textContent = isBreak
+    ? `${state.settings.focusTime}분 완료! 이제 쉬어가세요.`
+    : '휴식 끝! 다시 집중할 시간입니다.';
+
+  overlay.className = `intensity-${intensity}`;
+  overlay.classList.add('active');
+
+  // animations
+  requestAnimationFrame(() => {
+    if (intensity === 'strong') {
+      overlay.classList.add('flash-anim');
+      overlay.addEventListener('animationend', () => overlay.classList.remove('flash-anim'), { once: true });
+    } else if (intensity === 'extreme') {
+      overlay.classList.add('flash-anim-strong');
+      overlay.addEventListener('animationend', () => {
+        overlay.classList.remove('flash-anim-strong');
+        overlay.classList.add('shake-anim');
+        overlay.addEventListener('animationend', () => overlay.classList.remove('shake-anim'), { once: true });
+      }, { once: true });
+    }
+  });
+
+  let cd = autoSeconds;
+  alertCountdown.textContent = `${cd}초 후 자동 닫힘`;
+  clearInterval(overlayCountdownIv);
+  overlayCountdownIv = setInterval(() => {
+    cd--;
+    alertCountdown.textContent = `${cd}초 후 자동 닫힘`;
+    if (cd <= 0) hideOverlay();
+  }, 1000);
+}
+
+function hideOverlay() {
+  clearInterval(overlayCountdownIv);
+  overlay.classList.remove('active');
+  state.isAlertPending = false;
+}
+
+// ── MODE COLORS ──
+const MODE_COLOR = {
+  'focus':       '#E53E3E',
+  'short-break': '#38A169',
+  'long-break':  '#3182CE',
+};
+const MODE_LABEL = {
+  'focus':       '집중',
+  'short-break': '짧은 휴식',
+  'long-break':  '긴 휴식',
+};
+const FAVICON_TYPE = {
+  'focus':       'focus',
+  'short-break': 'short',
+  'long-break':  'long',
+};
+
+// ── RING PROGRESS ──
+const ring = document.getElementById('progress-ring');
+const CIRCUMFERENCE = 2 * Math.PI * 44;
+ring.style.strokeDasharray = CIRCUMFERENCE;
+
+function updateRing() {
+  const pct = state.totalTime > 0 ? state.timeLeft / state.totalTime : 1;
+  ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
+  ring.style.stroke = MODE_COLOR[state.mode];
+}
+
+// ── UI RENDER ──
+const timerDisplay = document.getElementById('timer-display');
+const timerLabel   = document.getElementById('timer-label');
+const startBtn     = document.getElementById('start-btn');
+const todayCountEl = document.getElementById('today-count');
+const goalCountEl  = document.getElementById('goal-count');
+const progressFill = document.getElementById('progress-fill');
+const cycleDots    = document.querySelectorAll('.cycle-dot');
+const modeTabs     = document.querySelectorAll('.mode-tab');
+
+function formatTime(s) {
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function renderTimer() {
+  timerDisplay.textContent = formatTime(state.timeLeft);
+  timerDisplay.style.color = state.status === 'alert' ? '#E53E3E' : MODE_COLOR[state.mode];
+  timerLabel.textContent = MODE_LABEL[state.mode];
+
+  // Start button
+  if (state.status === 'running') {
+    startBtn.textContent = '일시정지';
+    startBtn.style.background = MODE_COLOR[state.mode];
+    startBtn.style.color = 'white';
+  } else {
+    startBtn.textContent = state.status === 'paused' ? '재개' : '시작';
+    startBtn.style.background = MODE_COLOR[state.mode];
+    startBtn.style.color = 'white';
+  }
+
+  updateRing();
+}
+
+function renderCycles() {
+  cycleDots.forEach((dot, i) => {
+    dot.className = 'cycle-dot';
+    if (i < state.cycleCount) dot.classList.add('done');
+    else if (i === state.cycleCount && state.cycleCount < 4) dot.classList.add('current');
+  });
+}
+
+function renderStats() {
+  checkDailyReset();
+  todayCountEl.textContent = state.todaySessions;
+  goalCountEl.textContent = state.settings.dailyGoal;
+  const pct = Math.min(100, (state.todaySessions / state.settings.dailyGoal) * 100);
+  progressFill.style.width = pct + '%';
+  progressFill.style.background = MODE_COLOR[state.mode];
+}
+
+function renderModeTabs() {
+  modeTabs.forEach(t => {
+    t.classList.toggle('active', t.dataset.mode === state.mode);
+  });
+}
+
+function renderAll() {
+  renderTimer();
+  renderCycles();
+  renderStats();
+  renderModeTabs();
+  document.documentElement.dataset.theme = state.settings.theme;
+  document.getElementById('theme-btn').textContent = state.settings.theme === 'dark' ? '🌙' : '☀️';
+  if (state.status === 'running' || state.status === 'alert') {
+    setFavicon(FAVICON_TYPE[state.mode]);
+  } else {
+    setFavicon('idle');
+  }
+}
+
+// ── SETTINGS UI ──
+function renderSettingsUI() {
+  const s = state.settings;
+  document.getElementById('focusTime-val').textContent = s.focusTime;
+  document.getElementById('shortBreak-val').textContent = s.shortBreak;
+  document.getElementById('longBreak-val').textContent = s.longBreak;
+  document.getElementById('dailyGoal-val').textContent = s.dailyGoal;
+  document.getElementById('autoStart-toggle').checked = s.autoStart;
+  document.getElementById('startWithBreak-toggle').checked = s.startWithBreak;
+  document.getElementById('notifyOS-toggle').checked = s.notifyOS;
+  document.getElementById('notifyTab-toggle').checked = s.notifyTab;
+  document.getElementById('notifyOverlay-toggle').checked = s.notifyOverlay;
+  document.getElementById('overlayIntensity-select').value = s.overlayIntensity;
+  updateNotifyBanner();
+}
+
+function updateNotifyBanner() {
+  const banner = document.getElementById('notify-banner');
+  if (!('Notification' in window)) { banner.classList.add('hidden'); return; }
+  if (Notification.permission === 'default' && state.settings.notifyOS) {
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+// ── DAILY RESET ──
+function checkDailyReset() {
+  const today = new Date().toDateString();
+  const saved = localStorage.getItem(STORAGE.TODAY_DATE);
+  if (saved !== today) {
+    state.todaySessions = 0;
+    localStorage.setItem(STORAGE.TODAY_DATE, today);
+    localStorage.setItem(STORAGE.TODAY_SESSIONS, '0');
+  }
+}
+
+// ── STORAGE ──
+function saveSettings() {
+  localStorage.setItem(STORAGE.SETTINGS, JSON.stringify(state.settings));
+}
+function saveSessions() {
+  localStorage.setItem(STORAGE.TODAY_SESSIONS, String(state.todaySessions));
+}
+function loadStorage() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORAGE.SETTINGS) || 'null');
+    if (s) Object.assign(state.settings, s);
+  } catch(e) {}
+
+  checkDailyReset();
+  const saved = parseInt(localStorage.getItem(STORAGE.TODAY_SESSIONS) || '0', 10);
+  state.todaySessions = isNaN(saved) ? 0 : saved;
+}
+
+// ── INIT MODE ──
+function getInitialMode() {
+  return state.settings.startWithBreak ? 'short-break' : 'focus';
+}
+
+function getModeTime(mode) {
+  switch(mode) {
+    case 'focus':       return state.settings.focusTime * 60;
+    case 'short-break': return state.settings.shortBreak * 60;
+    case 'long-break':  return state.settings.longBreak * 60;
+  }
+}
+
+function setMode(mode, autoStartFlag) {
+  state.mode = mode;
+  state.timeLeft = getModeTime(mode);
+  state.totalTime = state.timeLeft;
+  state.status = 'idle';
+  stopTimer();
+  stopTitleFlash();
+  hideOverlay();
+  renderAll();
+  if (autoStartFlag) {
+    setTimeout(() => { state.status = 'running'; startTimer(); renderAll(); }, 300);
+  }
+}
+
+// ── TICK ──
+function tick() {
+  if (state.status !== 'running') return;
+  state.timeLeft--;
+
+  if (state.timeLeft <= 0) {
+    state.timeLeft = 0;
+    onSessionEnd();
+    return;
+  }
+
+  // 1-min warning tab flash
+  if (state.timeLeft === 60 && state.settings.notifyTab) {
+    const warningMsg = state.mode === 'focus' ? '⚠️ 1분 남음!' : '⚠️ 곧 집중 시작!';
+    if (document.visibilityState !== 'visible') {
+      startTitleFlash(warningMsg);
+    }
+  }
+
+  renderTimer();
+  document.title = `${formatTime(state.timeLeft)} — ${MODE_LABEL[state.mode]}`;
+}
+
+// ── SESSION END ──
+function onSessionEnd() {
+  stopTimer();
+  state.status = 'alert';
+  state.isAlertPending = true;
+
+  const wasFocus = state.mode === 'focus';
+
+  if (wasFocus) {
+    state.todaySessions++;
+    saveSessions();
+    state.cycleCount = (state.cycleCount + 1) % 4;
+  }
+
+  const nextMode = getNextMode();
+  const notifTitle = wasFocus ? '🍅 집중 시간 종료!' : '☕ 휴식 시간 종료!';
+  const notifBody = wasFocus
+    ? `${state.settings.focusTime}분 완료! ${nextMode === 'long-break' ? state.settings.longBreak : state.settings.shortBreak}분 휴식을 시작하세요.`
+    : '휴식이 끝났습니다. 다시 집중할 시간!';
+
+  sendNotification(notifTitle, notifBody);
+  window.focus();
+  setFavicon('alert');
+
+  if (document.visibilityState !== 'visible') {
+    const flashMsg = wasFocus ? '⏰ 쉬세요!' : '🔥 집중 시작!';
+    startTitleFlash(flashMsg);
+  } else {
+    showOverlay(state.mode);
+  }
+
+  renderAll();
+  renderCycles();
+  renderStats();
+}
+
+function getNextMode() {
+  if (state.mode === 'focus') {
+    const nextCycle = (state.cycleCount) % 4;
+    return nextCycle === 0 ? 'long-break' : 'short-break';
+  }
+  return 'focus';
+}
+
+function proceedToNext(autoStart) {
+  const next = getNextMode();
+  hideOverlay();
+  stopTitleFlash();
+  setMode(next, autoStart ?? state.settings.autoStart);
+}
+
+// ── PAGE VISIBILITY ──
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    stopTitleFlash();
+    if (state.isAlertPending) {
+      showOverlay(state.mode);
+    } else if (state.status === 'running') {
+      document.title = `${formatTime(state.timeLeft)} — ${MODE_LABEL[state.mode]}`;
+    } else {
+      document.title = ORIGINAL_TITLE;
+    }
+  }
+});
+
+// ── DEBOUNCE ──
+function debounce(fn, ms) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+}
+
+// ── EVENT HANDLERS ──
+const handleStart = debounce(() => {
+  if (state.status === 'idle' || state.status === 'paused') {
+    state.status = 'running';
+    startTimer();
+    renderAll();
+  } else if (state.status === 'running') {
+    state.status = 'paused';
+    stopTimer();
+    renderAll();
+  }
+}, 200);
+
+document.getElementById('start-btn').addEventListener('click', handleStart);
+
+document.getElementById('reset-btn').addEventListener('click', debounce(() => {
+  stopTimer();
+  stopTitleFlash();
+  hideOverlay();
+  const initMode = getInitialMode();
+  state.mode = initMode;
+  state.timeLeft = getModeTime(initMode);
+  state.totalTime = state.timeLeft;
+  state.status = 'idle';
+  state.isAlertPending = false;
+  renderAll();
+}, 200));
+
+document.getElementById('skip-btn').addEventListener('click', debounce(() => {
+  stopTimer();
+  stopTitleFlash();
+  hideOverlay();
+  proceedToNext(false);
+}, 200));
+
+// Mode tabs
+modeTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (state.status === 'running') {
+      stopTimer();
+    }
+    setMode(tab.dataset.mode, false);
+  });
+});
+
+// Settings navigation
+document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('main-screen').classList.remove('active');
+  document.getElementById('settings-screen').classList.add('active');
+  renderSettingsUI();
+});
+document.getElementById('settings-back-btn').addEventListener('click', () => {
+  document.getElementById('settings-screen').classList.remove('active');
+  document.getElementById('main-screen').classList.add('active');
+  renderAll();
+});
+
+// Theme toggle
+document.getElementById('theme-btn').addEventListener('click', () => {
+  state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+  saveSettings();
+  renderAll();
+});
+
+// Number buttons
+document.querySelectorAll('.num-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.setting;
+    const dir = parseInt(btn.dataset.dir, 10);
+    const lim = LIMITS[key];
+    const newVal = Math.min(lim.max, Math.max(lim.min, state.settings[key] + dir));
+    state.settings[key] = newVal;
+    document.getElementById(`${key}-val`).textContent = newVal;
+    saveSettings();
+    // If timer is idle, update displayed time
+    if (state.status === 'idle') {
+      const initMode = getInitialMode();
+      if (
+        (key === 'focusTime' && state.mode === 'focus') ||
+        (key === 'shortBreak' && state.mode === 'short-break') ||
+        (key === 'longBreak' && state.mode === 'long-break') ||
+        (key === 'focusTime' && initMode === 'focus' && state.mode === 'focus') ||
+        (key === 'shortBreak' && initMode === 'short-break' && state.mode === 'short-break')
+      ) {
+        state.timeLeft = getModeTime(state.mode);
+        state.totalTime = state.timeLeft;
+      }
+    }
+    renderStats();
+    renderTimer();
+  });
+});
+
+// Toggles
+function wireToggle(id, key) {
+  document.getElementById(id).addEventListener('change', function() {
+    state.settings[key] = this.checked;
+    saveSettings();
+    if (key === 'notifyOS' && this.checked) requestNotificationPermission();
+    updateNotifyBanner();
+
+    // startWithBreak: if idle, reset mode accordingly
+    if (key === 'startWithBreak' && state.status === 'idle') {
+      const initMode = getInitialMode();
+      state.mode = initMode;
+      state.timeLeft = getModeTime(initMode);
+      state.totalTime = state.timeLeft;
+      renderTimer();
+      renderModeTabs();
+    }
+  });
+}
+wireToggle('autoStart-toggle', 'autoStart');
+wireToggle('startWithBreak-toggle', 'startWithBreak');
+wireToggle('notifyOS-toggle', 'notifyOS');
+wireToggle('notifyTab-toggle', 'notifyTab');
+wireToggle('notifyOverlay-toggle', 'notifyOverlay');
+
+document.getElementById('overlayIntensity-select').addEventListener('change', function() {
+  state.settings.overlayIntensity = this.value;
+  saveSettings();
+});
+
+// Notify request button
+document.getElementById('request-notify-btn').addEventListener('click', () => {
+  requestNotificationPermission();
+});
+
+// Alert overlay buttons
+document.getElementById('alert-confirm-btn').addEventListener('click', () => {
+  proceedToNext(state.settings.autoStart);
+});
+document.getElementById('alert-dismiss-btn').addEventListener('click', () => {
+  hideOverlay();
+  state.status = 'idle';
+  const initMode = getInitialMode();
+  state.mode = initMode;
+  state.timeLeft = getModeTime(initMode);
+  state.totalTime = state.timeLeft;
+  stopTitleFlash();
+  renderAll();
+});
+
+// Reset sessions
+document.getElementById('reset-sessions-btn').addEventListener('click', () => {
+  state.todaySessions = 0;
+  saveSessions();
+  renderStats();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); handleStart(); }
+  if (e.code === 'KeyR') {
+    if (document.getElementById('main-screen').classList.contains('active')) {
+      document.getElementById('reset-btn').click();
+    }
+  }
+});
+
+// ── INIT ──
+function init() {
+  worker = createWorker();
+  loadStorage();
+
+  const initMode = getInitialMode();
+  state.mode = initMode;
+  state.timeLeft = getModeTime(initMode);
+  state.totalTime = state.timeLeft;
+  state.status = 'idle';
+
+  renderAll();
+  renderSettingsUI();
+  setFavicon('idle');
+  document.title = ORIGINAL_TITLE;
+
+  // Request notification permission on first load
+  if (state.settings.notifyOS && 'Notification' in window && Notification.permission === 'default') {
+    setTimeout(() => requestNotificationPermission(), 1500);
+  }
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
