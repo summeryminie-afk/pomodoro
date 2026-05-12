@@ -704,7 +704,7 @@
   <div class="alert-icon" id="alert-icon">⏰</div>
   <div class="alert-title" id="alert-title">집중 시간 종료!</div>
   <div class="alert-msg" id="alert-msg">25분 완료! 5분 휴식을 시작하세요.</div>
-  <div class="alert-countdown" id="alert-countdown">10초 후 자동 닫힘</div>
+  <div class="alert-countdown" id="alert-countdown">확인 버튼을 눌러 다음 세션으로</div>
   <button class="alert-confirm" id="alert-confirm-btn">✓ 확인</button>
   <button class="alert-skip" id="alert-dismiss-btn">그냥 닫기</button>
 </div>
@@ -872,19 +872,18 @@ const alertIcon = document.getElementById('alert-icon');
 const alertTitle = document.getElementById('alert-title');
 const alertMsg = document.getElementById('alert-msg');
 const alertCountdown = document.getElementById('alert-countdown');
-let overlayCountdownIv = null;
 
 function showOverlay(type) {
   if (!state.settings.notifyOverlay) return;
   const isBreak = (type === 'focus');
   const intensity = state.settings.overlayIntensity;
-  const autoSeconds = intensity === 'extreme' ? 15 : 10;
 
   alertIcon.textContent = isBreak ? '☕' : '🔥';
   alertTitle.textContent = isBreak ? '집중 시간 종료!' : '휴식 시간 종료!';
   alertMsg.textContent = isBreak
     ? `${state.settings.focusTime}분 완료! 이제 쉬어가세요.`
     : '휴식 끝! 다시 집중할 시간입니다.';
+  alertCountdown.textContent = '확인 버튼을 눌러 다음 세션으로';
 
   overlay.className = `intensity-${intensity}`;
   overlay.classList.add('active');
@@ -903,19 +902,9 @@ function showOverlay(type) {
       }, { once: true });
     }
   });
-
-  let cd = autoSeconds;
-  alertCountdown.textContent = `${cd}초 후 자동 닫힘`;
-  clearInterval(overlayCountdownIv);
-  overlayCountdownIv = setInterval(() => {
-    cd--;
-    alertCountdown.textContent = `${cd}초 후 자동 닫힘`;
-    if (cd <= 0) hideOverlay();
-  }, 1000);
 }
 
 function hideOverlay() {
-  clearInterval(overlayCountdownIv);
   overlay.classList.remove('active');
   state.isAlertPending = false;
 }
