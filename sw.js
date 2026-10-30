@@ -1,4 +1,4 @@
-const CACHE = 'focusflash-v3';
+const CACHE = 'focusflash-v4';
 const ASSETS = ['/', '/index.html', '/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {

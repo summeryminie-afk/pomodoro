@@ -560,12 +560,7 @@
       <button class="btn-icon-round" id="skip-btn" title="건너뛰기">⏭</button>
     </div>
 
-    <div class="cycles" id="cycles-wrap">
-      <div class="cycle-dot current" data-idx="0"></div>
-      <div class="cycle-dot" data-idx="1"></div>
-      <div class="cycle-dot" data-idx="2"></div>
-      <div class="cycle-dot" data-idx="3"></div>
-    </div>
+    <div class="cycles" id="cycles-wrap"></div>
 
     <div class="stats-bar">
       <div class="stats-row">
@@ -619,6 +614,18 @@
             <span class="num-val" id="longBreak-val">15</span>
             <button class="num-btn" data-setting="longBreak" data-dir="1">+</button>
             <span style="font-size:11px;color:var(--text-muted);margin-left:2px">분</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">긴 휴식 주기</div>
+            <div class="settings-row-sub">집중 N회마다 긴 휴식</div>
+          </div>
+          <div class="num-input-wrap">
+            <button class="num-btn" data-setting="longBreakInterval" data-dir="-1">−</button>
+            <span class="num-val" id="longBreakInterval-val">4</span>
+            <button class="num-btn" data-setting="longBreakInterval" data-dir="1">+</button>
+            <span style="font-size:11px;color:var(--text-muted);margin-left:2px">회</span>
           </div>
         </div>
         <div class="settings-row">
@@ -724,6 +731,7 @@ const LIMITS = {
   focusTime:  { min: 5,  max: 60 },
   shortBreak: { min: 1,  max: 15 },
   longBreak:  { min: 5,  max: 30 },
+  longBreakInterval: { min: 2, max: 8 },
   dailyGoal:  { min: 1,  max: 20 },
 };
 
@@ -740,6 +748,7 @@ const state = {
     focusTime: 25,
     shortBreak: 5,
     longBreak: 15,
+    longBreakInterval: 4,
     autoStart: false,
     startWithBreak: false,
     notifyOS: true,
@@ -944,7 +953,7 @@ const startBtn     = document.getElementById('start-btn');
 const todayCountEl = document.getElementById('today-count');
 const goalCountEl  = document.getElementById('goal-count');
 const progressFill = document.getElementById('progress-fill');
-const cycleDots    = document.querySelectorAll('.cycle-dot');
+const cyclesWrap   = document.getElementById('cycles-wrap');
 const modeTabs     = document.querySelectorAll('.mode-tab');
 
 function formatTime(s) {
@@ -973,10 +982,19 @@ function renderTimer() {
 }
 
 function renderCycles() {
-  cycleDots.forEach((dot, i) => {
+  const n = state.settings.longBreakInterval;
+  // 주기 설정이 바뀌면 점 개수 재생성
+  while (cyclesWrap.children.length < n) {
+    const dot = document.createElement('div');
+    dot.dataset.idx = cyclesWrap.children.length;
+    cyclesWrap.appendChild(dot);
+  }
+  while (cyclesWrap.children.length > n) cyclesWrap.lastChild.remove();
+
+  Array.from(cyclesWrap.children).forEach((dot, i) => {
     dot.className = 'cycle-dot';
     if (i < state.cycleCount) dot.classList.add('done');
-    else if (i === state.cycleCount && state.cycleCount < 4) dot.classList.add('current');
+    else if (i === state.cycleCount) dot.classList.add('current');
   });
 }
 
@@ -1015,6 +1033,7 @@ function renderSettingsUI() {
   document.getElementById('focusTime-val').textContent = s.focusTime;
   document.getElementById('shortBreak-val').textContent = s.shortBreak;
   document.getElementById('longBreak-val').textContent = s.longBreak;
+  document.getElementById('longBreakInterval-val').textContent = s.longBreakInterval;
   document.getElementById('dailyGoal-val').textContent = s.dailyGoal;
   document.getElementById('autoStart-toggle').checked = s.autoStart;
   document.getElementById('startWithBreak-toggle').checked = s.startWithBreak;
@@ -1126,7 +1145,7 @@ function onSessionEnd() {
   if (wasFocus) {
     state.todaySessions++;
     saveSessions();
-    state.cycleCount = (state.cycleCount + 1) % 4;
+    state.cycleCount = (state.cycleCount + 1) % state.settings.longBreakInterval;
     if ('setAppBadge' in navigator) navigator.setAppBadge(state.todaySessions);
   }
 
@@ -1156,7 +1175,7 @@ function onSessionEnd() {
 
 function getNextMode() {
   if (state.mode === 'focus') {
-    const nextCycle = (state.cycleCount) % 4;
+    const nextCycle = state.cycleCount % state.settings.longBreakInterval;
     return nextCycle === 0 ? 'long-break' : 'short-break';
   }
   return 'focus';
@@ -1266,6 +1285,11 @@ document.querySelectorAll('.num-btn').forEach(btn => {
     state.settings[key] = newVal;
     document.getElementById(`${key}-val`).textContent = newVal;
     saveSettings();
+    if (key === 'longBreakInterval') {
+      // 주기를 줄여서 진행 수가 넘치면 마지막 칸으로 맞춤 → 다음 집중 후 긴 휴식
+      if (state.cycleCount >= newVal) state.cycleCount = newVal - 1;
+      renderCycles();
+    }
     // If timer is idle, update displayed time
     if (state.status === 'idle') {
       const initMode = getInitialMode();
