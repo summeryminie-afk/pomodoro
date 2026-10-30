@@ -307,7 +307,7 @@ python3 -m http.server 8080
 | `sw.js` | 서비스워커 (오프라인 캐시, OS 알림 발송) |
 | `manifest.json`, `icon.svg` | PWA 설치용 |
 | `README.md` | 저장소 소개 |
-| `CLAUDE.md`, `prd.md`, `pomodoro_plan.md`, `sprint.md` | 기획/개발 문서. **git에 커밋 안 됨** (OneDrive로만 옮겨짐) |
+| `CLAUDE.md`, `prd.md`, `pomodoro_plan.md`, `sprint.md` | 기획/개발 문서 (공개 저장소에 올라가 있으므로 민감한 정보는 적지 말 것) |
 
 ### 서비스워커 규칙 (중요)
 - **`index.html`(페이지 이동 요청)은 네트워크 우선**, 실패하면(오프라인) 캐시된 `/index.html`로 대체. 나머지 파일은 캐시 우선
@@ -339,10 +339,9 @@ python3 -m http.server 8080
 ### 다음에 할 일
 1. **알림 권한 차단(denied) 안내 배너** — 지금은 권한이 `default`일 때만 배너가 뜨고(`updateNotifyBanner`), 사용자가 "차단"을 누르면 아무 안내 없이 OS 알림이 조용히 꺼짐. 차단 상태일 때 "브라우저 설정에서 알림을 허용해주세요" 안내를 보여주면 사용자 문의가 줄어듦
 2. **설계 문서 정리** — 위 "설계 문서와 달라진 점"을 반영해 위쪽 설계 섹션과 `sprint.md` 체크리스트를 실제 코드에 맞게 고치기
-3. **기획 문서 커밋 여부 결정** — `CLAUDE.md` 등 문서 4개가 git에 없어서 OneDrive가 아니면 사라질 수 있음. 저장소에 커밋해두는 것을 권장
-4. **미검증 항목 (`sprint.md` 체크리스트):** 30분 백그라운드 타이머 오차 ±2초, Firefox/Safari에서 알림 동작, 200x300px 작은 창 UI
+3. **미검증 항목 (`sprint.md` 체크리스트):** 30분 백그라운드 타이머 오차 ±2초, Firefox/Safari에서 알림 동작, 200x300px 작은 창 UI
 
 ### 개발 환경 메모
 - **푸시 로그인:** Windows용 Git의 Git Credential Manager가 처음 푸시할 때 브라우저로 GitHub 로그인을 요청함. Claude가 실행한 터미널에서는 로그인 창을 띄울 수 없어 실패하므로, **새 컴퓨터에서는 처음 한 번 직접 명령 프롬프트에서 `git push`로 로그인**해야 함
 - **로컬 테스트:** 기존 컴퓨터에는 Python/Node가 없었음. 서비스워커는 HTTPS 또는 localhost에서만 동작하므로, 서비스워커 관련 변경은 배포 사이트에서 확인하는 것이 확실함
-- **새 컴퓨터로 옮길 때:** OneDrive가 `.git` 폴더까지 동기화하면 가끔 저장소가 깨질 수 있음. 동기화가 완전히 끝난 뒤 열고, 문제가 있으면 `git clone https://github.com/summeryminie-afk/pomodoro.git`으로 새로 받은 뒤 위 문서 4개만 복사하면 됨
+- **새 컴퓨터로 옮길 때:** OneDrive가 `.git` 폴더까지 동기화하면 가끔 저장소가 깨질 수 있음. 동기화가 완전히 끝난 뒤 열고, 문제가 있으면 `git clone https://github.com/summeryminie-afk/pomodoro.git`으로 새로 받으면 됨 (문서까지 모두 저장소에 있음)
