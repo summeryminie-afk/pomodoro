@@ -1,4 +1,4 @@
-const CACHE = 'focusflash-v4';
+const CACHE = 'focusflash-v5';
 const ASSETS = ['/', '/index.html', '/icon.svg', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -15,8 +15,26 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+
+  // 페이지(HTML)는 네트워크 우선: 새 배포가 한 번에 반영되고, 오프라인이면 캐시로 대체
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req).then(res => {
+        if (res.ok) {
+          const copy = res.clone();
+          e.waitUntil(caches.open(CACHE).then(c => c.put('/index.html', copy)));
+        }
+        return res;
+      }).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // 아이콘, 매니페스트 등 나머지는 캐시 우선
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    caches.match(req).then(r => r || fetch(req))
   );
 });
 
